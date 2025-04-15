@@ -73,7 +73,6 @@ class RouterStore {
     hasAttemptedToHideSplash = false;
     initialState;
     rootState;
-    nextState;
     routeInfo;
     splashScreenAnimationFrame;
     // The expo-router config plugin
@@ -101,7 +100,6 @@ class RouterStore {
         // Clean up any previous state
         this.initialState = undefined;
         this.rootState = undefined;
-        this.nextState = undefined;
         this.linking = undefined;
         this.navigationRefSubscription?.();
         this.rootStateSubscribers.clear();
@@ -172,8 +170,9 @@ class RouterStore {
          *
          */
         this.navigationRef = navigationRef;
-        this.navigationRefSubscription = navigationRef.addListener('state', (data) => {
-            const state = data.data.state;
+        this.navigationRefSubscription = navigationRef.addListener('state', () => {
+            // Don't use the data from the state event, as it maybe stale. Fetch the state from the ref
+            const state = this.navigationRef.getRootState();
             if (!this.hasAttemptedToHideSplash) {
                 this.hasAttemptedToHideSplash = true;
                 // NOTE(EvanBacon): `navigationRef.isReady` is sometimes not true when state is called initially.
@@ -181,28 +180,18 @@ class RouterStore {
                     SplashScreen._internal_maybeHideAsync?.();
                 });
             }
-            let shouldUpdateSubscribers = this.nextState === state;
-            this.nextState = undefined;
             // This can sometimes be undefined when an error is thrown in the Root Layout Route.
             // Additionally that state may already equal the rootState if it was updated within a hook
-            if (state && state !== this.rootState) {
-                exports.store.updateState(state, undefined);
-                shouldUpdateSubscribers = true;
-            }
-            // If the state has changed, or was changed inside a hook we need to update the subscribers
-            if (shouldUpdateSubscribers) {
+            if (state !== this.rootState) {
+                exports.store.updateState(state);
                 for (const subscriber of this.rootStateSubscribers) {
                     subscriber();
                 }
             }
         });
-        for (const subscriber of this.storeSubscribers) {
-            subscriber();
-        }
     }
-    updateState(state, nextState = state) {
+    updateState(state) {
         exports.store.rootState = state;
-        exports.store.nextState = nextState;
         const nextRouteInfo = exports.store.getRouteInfo(state);
         if (!(0, fast_deep_equal_1.default)(this.routeInfo, nextRouteInfo)) {
             exports.store.routeInfo = nextRouteInfo;

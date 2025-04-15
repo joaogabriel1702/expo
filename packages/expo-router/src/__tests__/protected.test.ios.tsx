@@ -6,23 +6,18 @@ import { router } from '../imperative-api';
 import Stack from '../layouts/Stack';
 import { act, renderRouter, screen } from '../testing-library';
 
-it('should work within the default Stack', () => {
-  let update;
-  let shouldShowA = false;
+it('should protect routes during the initial load', () => {
+  let useStateResult;
 
   renderRouter(
     {
       _layout: function Layout() {
-        const state = useState(0);
-        update = state[1];
-        console.log('test rendered');
+        useStateResult = useState(false);
         return (
           <Stack id={undefined}>
-            <Stack.Protected guard={shouldShowA}>
+            <Stack.Protected guard={useStateResult[0]}>
               <Stack.Screen name="a" />
             </Stack.Protected>
-
-            <Stack.Screen name="b" />
           </Stack>
         );
       },
@@ -36,48 +31,183 @@ it('should work within the default Stack', () => {
     { initialUrl: '/a' }
   );
 
-  expect(store.rootStateSnapshot()).toStrictEqual({});
+  expect(store.rootStateSnapshot()).toStrictEqual({
+    index: 0,
+    key: expect.any(String),
+    preloadedRoutes: [],
+    routeNames: ['__root'],
+    routes: [
+      {
+        key: expect.any(String),
+        name: '__root',
+        params: undefined,
+        state: {
+          index: 0,
+          key: expect.any(String),
+          preloadedRoutes: [],
+          routeNames: ['index', 'b', 'c', '_sitemap', '+not-found'], // a should not be a possible route
+          routes: [
+            {
+              key: expect.any(String),
+              name: 'index',
+              params: undefined,
+            },
+          ],
+          stale: false,
+          type: 'stack',
+        },
+      },
+    ],
+    stale: false,
+    type: 'stack',
+  });
 
-  // expect(store.rootStateSnapshot()).toStrictEqual({
-  //   index: 0,
-  //   key: expect.any(String),
-  //   preloadedRoutes: [],
-  //   routeNames: ['__root'],
-  //   routes: [
-  //     {
-  //       key: expect.any(String),
-  //       name: '__root',
-  //       params: undefined,
-  //       state: {
-  //         index: 0,
-  //         key: expect.any(String),
-  //         preloadedRoutes: [],
-  //         routeNames: ['a', 'b', 'c', '_sitemap', '+not-found'],
-  //         routes: [
-  //           {
-  //             key: expect.any(String),
-  //             name: 'b',
-  //             params: undefined,
-  //           },
-  //         ],
-  //         stale: false,
-  //         type: 'stack',
-  //       },
-  //     },
-  //   ],
-  //   stale: false,
-  //   type: 'stack',
-  // });
+  expect(screen.getByTestId('index')).toBeVisible();
+
+  // Enable the /a route
+  act(() => {
+    useStateResult[1](true);
+  });
+
+  // Now we should be able to navigate to /a
+  // TODO: Allow navigation events while updating state
+  act(() => router.replace('/a'));
+
+  expect(screen.getByTestId('a')).toBeVisible();
+  expect(store.rootStateSnapshot()).toStrictEqual({
+    index: 0,
+    key: expect.any(String),
+    preloadedRoutes: [],
+    routeNames: ['__root'],
+    routes: [
+      {
+        key: expect.any(String),
+        name: '__root',
+        params: undefined,
+        state: {
+          index: 0,
+          key: expect.any(String),
+          preloadedRoutes: [],
+          routeNames: ['a', 'index', 'b', 'c', '_sitemap', '+not-found'],
+          routes: [
+            {
+              key: expect.any(String),
+              name: 'a',
+              params: {},
+            },
+          ],
+          stale: false,
+          type: 'stack',
+        },
+      },
+    ],
+    stale: false,
+    type: 'stack',
+  });
+});
+
+it.skip('should default to anchor during initial load', () => {
+  let useStateResult;
+
+  renderRouter(
+    {
+      _layout: {
+        unstable_settings: {
+          anchor: 'b',
+        },
+        default: function Layout() {
+          useStateResult = useState(false);
+          return (
+            <Stack id={undefined}>
+              <Stack.Protected guard={useStateResult[0]}>
+                <Stack.Screen name="a" />
+              </Stack.Protected>
+
+              <Stack.Screen name="b" />
+            </Stack>
+          );
+        },
+      },
+      index: () => {
+        return <Text testID="index">index</Text>;
+      },
+      a: () => <Text testID="a">a</Text>,
+      b: () => <Text testID="b">B</Text>,
+    },
+    { initialUrl: '/a' }
+  );
+
+  expect(store.rootStateSnapshot()).toStrictEqual({
+    index: 0,
+    key: expect.any(String),
+    preloadedRoutes: [],
+    routeNames: ['__root'],
+    routes: [
+      {
+        key: expect.any(String),
+        name: '__root',
+        params: undefined,
+        state: {
+          index: 0,
+          key: expect.any(String),
+          preloadedRoutes: [],
+          routeNames: ['b', 'index', 'c', '_sitemap', '+not-found'], // a should not be a possible route
+          routes: [
+            {
+              key: expect.any(String),
+              name: 'b',
+              params: undefined,
+            },
+          ],
+          stale: false,
+          type: 'stack',
+        },
+      },
+    ],
+    stale: false,
+    type: 'stack',
+  });
 
   expect(screen.getByTestId('b')).toBeVisible();
 
-  console.log('----');
-  shouldShowA = true;
+  // Enable the /a route
   act(() => {
-    update(1);
+    useStateResult[1](true);
   });
 
+  // Now we should be able to navigate to /a
+  // TODO: Allow navigation events while updating state
   act(() => router.replace('/a'));
+
   expect(screen.getByTestId('a')).toBeVisible();
-  expect(store.rootStateSnapshot()).toStrictEqual({});
+  expect(store.rootStateSnapshot()).toStrictEqual({
+    index: 0,
+    key: expect.any(String),
+    preloadedRoutes: [],
+    routeNames: ['__root'],
+    routes: [
+      {
+        key: expect.any(String),
+        name: '__root',
+        params: undefined,
+        state: {
+          index: 0,
+          key: expect.any(String),
+          preloadedRoutes: [],
+          routeNames: ['a', 'b', 'index', 'c', '_sitemap', '+not-found'],
+          routes: [
+            {
+              key: expect.any(String),
+              name: 'a',
+              params: {},
+            },
+          ],
+          stale: false,
+          type: 'stack',
+        },
+      },
+    ],
+    stale: false,
+    type: 'stack',
+  });
 });

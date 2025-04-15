@@ -2,6 +2,7 @@
 
 import {
   NavigationContainerRefWithCurrent,
+  NavigationState,
   useNavigationContainerRef,
 } from '@react-navigation/native';
 import Constants from 'expo-constants';
@@ -55,11 +56,9 @@ export class RouterStore {
   private hasAttemptedToHideSplash: boolean = false;
 
   initialState?: ResultState;
-  rootState?: ResultState;
-  nextState?: ResultState;
+  rootState?: ResultState | NavigationState;
   routeInfo?: UrlObject;
   splashScreenAnimationFrame?: number;
-  fixStaleAnimationFrame?: number;
 
   // The expo-router config plugin
   config: any;
@@ -94,7 +93,6 @@ export class RouterStore {
     // Clean up any previous state
     this.initialState = undefined;
     this.rootState = undefined;
-    this.nextState = undefined;
     this.linking = undefined;
     this.navigationRefSubscription?.();
     this.rootStateSubscribers.clear();
@@ -142,7 +140,7 @@ export class RouterStore {
       // This will cause static rendering to fail, which once performs a single pass.
       // If the initialURL is a string, we can prefetch the state and routeInfo, skipping React Navigation's async behavior.
       const initialURL = this.linking?.getInitialURL?.();
-      if (typeof initialURL === 'string' && initialURL !== '/') {
+      if (typeof initialURL === 'string') {
         this.rootState = this.linking.getStateFromPath?.(initialURL, this.linking.config);
         this.initialState = this.rootState;
         if (this.rootState) {
@@ -171,8 +169,9 @@ export class RouterStore {
      *
      */
     this.navigationRef = navigationRef;
-    this.navigationRefSubscription = navigationRef.addListener('state', (data) => {
-      const state = data.data.state as ResultState;
+    this.navigationRefSubscription = navigationRef.addListener('state', () => {
+      // Don't use the data from the state event, as it maybe stale. Fetch the state from the ref
+      const state = this.navigationRef.getRootState();
 
       if (!this.hasAttemptedToHideSplash) {
         this.hasAttemptedToHideSplash = true;
@@ -182,32 +181,19 @@ export class RouterStore {
         });
       }
 
-      let shouldUpdateSubscribers = this.nextState === state;
-      this.nextState = undefined;
-
       // This can sometimes be undefined when an error is thrown in the Root Layout Route.
       // Additionally that state may already equal the rootState if it was updated within a hook
-      if (state && state !== this.rootState) {
-        store.updateState(state, undefined);
-        shouldUpdateSubscribers = true;
-      }
-
-      // If the state has changed, or was changed inside a hook we need to update the subscribers
-      if (shouldUpdateSubscribers) {
+      if (state !== this.rootState) {
+        store.updateState(state);
         for (const subscriber of this.rootStateSubscribers) {
           subscriber();
         }
       }
     });
-
-    for (const subscriber of this.storeSubscribers) {
-      subscriber();
-    }
   }
 
-  updateState(state: ResultState, nextState = state) {
+  updateState(state: ResultState | NavigationState) {
     store.rootState = state;
-    store.nextState = nextState;
 
     const nextRouteInfo = store.getRouteInfo(state);
 
@@ -216,7 +202,7 @@ export class RouterStore {
     }
   }
 
-  getRouteInfo(state: ResultState) {
+  getRouteInfo(state: ResultState | NavigationState) {
     return getRouteInfoFromState(
       (state: Parameters<typeof getPathFromState>[0], asPath: boolean) => {
         return getPathDataFromState(state, {

@@ -9,12 +9,10 @@ import React, {
   ReactNode,
   RefAttributes,
   useMemo,
-  useState,
   createContext,
 } from 'react';
 
-import { useContextKey, useRouteNode } from '../Route';
-import { store } from '../global-state/router-store';
+import { useContextKey } from '../Route';
 import { PickPartial } from '../types';
 import { useSortedScreens, ScreenProps } from '../useScreens';
 import { isProtectedReactElement, Protected } from '../views/Protected';
@@ -61,8 +59,6 @@ export function useFilterScreenChildren(
       if (isCustomNavigator) {
         customChildren.push(child);
       }
-
-      console.log(child.props);
 
       console.warn(
         `Layout children must be of type Screen, all other children are ignored. To use custom children, create a custom <Layout />. Update Layout Route at: "app${contextKey}/_layout"`
@@ -130,8 +126,6 @@ export function withLayoutContext<
   return Object.assign(
     forwardRef(({ children: userDefinedChildren, ...props }: any, ref) => {
       const contextKey = useContextKey();
-      const node = useRouteNode();
-      const [staleKey, setStaleKey] = useState(0);
 
       const { screens, protectedScreens } = useFilterScreenChildren(userDefinedChildren, {
         contextKey,
@@ -145,44 +139,7 @@ export function withLayoutContext<
         return null;
       }
 
-      const navigationKey = `${staleKey}`; //+ (protectedFallbacks ? `user` : `guest`);
-
-      const screenListeners = () => ({
-        ...props.screenListeners,
-        state: (e) => {
-          props.screenListeners?.state?.(e);
-
-          if (!node) return;
-
-          const name = node.route || '__root';
-          let old = store.navigationRef.getState().routes[0] as any;
-
-          if (!old.state.stale) {
-            return;
-          }
-
-          while (old.name !== name) {
-            old = old.state.routes[old.index || 0];
-          }
-
-          const oldRoute = old.state.routes[old.index || 0].name;
-          const newRoute = e.data.state.routes[e.data.state.index || 0].name;
-
-          if (oldRoute !== newRoute) {
-            setStaleKey((prev) => prev + 1);
-          }
-        },
-      });
-
-      return (
-        <Nav
-          key={navigationKey}
-          {...props}
-          ref={ref}
-          children={sorted}
-          screenListeners={screenListeners}
-        />
-      );
+      return <Nav {...props} id={contextKey} ref={ref} children={sorted} />;
     }),
     { Screen, Protected }
   ) as ForwardRefExoticComponent<

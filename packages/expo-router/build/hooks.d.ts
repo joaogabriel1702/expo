@@ -15,7 +15,15 @@ import { RouteParams, RouteSegments, UnknownOutputParams, Route } from './types'
  * }
  * ```
  */
-export declare function useRootNavigationState(): any;
+export declare function useRootNavigationState(): Readonly<{
+    key: string;
+    index: number;
+    routeNames: string[];
+    history?: unknown[];
+    routes: import("@react-navigation/routers").NavigationRoute<import("@react-navigation/routers").ParamListBase, string>[];
+    type: string;
+    stale: false;
+}> | import("./exports").ResultState;
 export declare function useRouteInfo(): import("./LocationProvider").UrlObject;
 /**
  * @deprecated Use [`useNavigationContainerRef`](#usenavigationcontainerref) instead,

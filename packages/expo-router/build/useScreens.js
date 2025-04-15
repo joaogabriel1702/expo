@@ -16,12 +16,7 @@ const primitives_1 = require("./primitives");
 const EmptyRoute_1 = require("./views/EmptyRoute");
 const SuspenseFallback_1 = require("./views/SuspenseFallback");
 const Try_1 = require("./views/Try");
-function getSortedChildren(children, order, initialRouteName) {
-    if (!order?.length) {
-        return children
-            .sort((0, Route_1.sortRoutesWithInitial)(initialRouteName))
-            .map((route) => ({ route, props: {} }));
-    }
+function getSortedChildren(children, order = [], initialRouteName) {
     const entries = [...children];
     const ordered = order
         .map(({ name, redirect, initialParams, listeners, options, getId, dangerouslySingular: singular, }) => {
@@ -63,10 +58,7 @@ function getSortedChildren(children, order, initialRouteName) {
                     getId = (options) => getSingularId(name, options);
                 }
             }
-            return {
-                route: match,
-                props: { initialParams, listeners, options, getId },
-            };
+            return { route: match, props: { initialParams, listeners, options, getId } };
         }
     })
         .filter(Boolean);
@@ -77,12 +69,16 @@ function getSortedChildren(children, order, initialRouteName) {
 /**
  * @returns React Navigation screens sorted by the `route` property.
  */
-function useSortedScreens(order) {
+function useSortedScreens(order, protectedScreens) {
     const node = (0, Route_1.useRouteNode)();
     const sorted = node?.children?.length
         ? getSortedChildren(node.children, order, node.initialRouteName)
         : [];
-    return react_1.default.useMemo(() => sorted.map((value) => routeToScreen(value.route, value.props)), [sorted]);
+    return react_1.default.useMemo(() => sorted
+        .filter((item) => !protectedScreens.has(item.route.route))
+        .map((value) => {
+        return routeToScreen(value.route, value.props);
+    }), [sorted, protectedScreens]);
 }
 function fromImport(value, { ErrorBoundary, ...component }) {
     // If possible, add a more helpful display name for the component stack to improve debugging of React errors such as `Text strings must be rendered within a <Text> component.`.
@@ -91,18 +87,13 @@ function fromImport(value, { ErrorBoundary, ...component }) {
     }
     if (ErrorBoundary) {
         const Wrapped = react_1.default.forwardRef((props, ref) => {
-            const children = react_1.default.createElement(component.default || EmptyRoute_1.EmptyRoute, {
-                ...props,
-                ref,
-            });
+            const children = react_1.default.createElement(component.default || EmptyRoute_1.EmptyRoute, { ...props, ref });
             return <Try_1.Try catch={ErrorBoundary}>{children}</Try_1.Try>;
         });
         if (__DEV__) {
             Wrapped.displayName = `ErrorBoundary(${value.contextKey})`;
         }
-        return {
-            default: Wrapped,
-        };
+        return { default: Wrapped };
     }
     if (process.env.NODE_ENV !== 'production') {
         if (typeof component.default === 'object' &&
@@ -148,6 +139,7 @@ function getQualifiedRouteComponent(value) {
     route, navigation, 
     // Pass all other props to the component
     ...props }) {
+        // console.log('**', JSON.stringify(useNavigation().getState(), null, 2));
         return (<Route_1.Route node={value} route={route}>
         <react_1.default.Suspense fallback={<SuspenseFallback_1.SuspenseFallback route={value}/>}>
           <ScreenComponent {...props} 
@@ -169,10 +161,7 @@ function screenOptionsFactory(route, options) {
         const staticOptions = route.generated ? route.loadRoute()?.getNavOptions : null;
         const staticResult = typeof staticOptions === 'function' ? staticOptions(args) : staticOptions;
         const dynamicResult = typeof options === 'function' ? options?.(args) : options;
-        const output = {
-            ...staticResult,
-            ...dynamicResult,
-        };
+        const output = { ...staticResult, ...dynamicResult };
         // Prevent generated screens from showing up in the tab bar.
         if (route.generated) {
             output.tabBarItemStyle = { display: 'none' };

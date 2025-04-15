@@ -6,6 +6,7 @@ const native_1 = require("@react-navigation/native");
 const native_stack_1 = require("@react-navigation/native-stack");
 const withLayoutContext_1 = require("./withLayoutContext");
 const useScreens_1 = require("../useScreens");
+const Protected_1 = require("../views/Protected");
 const NativeStackNavigator = (0, native_stack_1.createNativeStackNavigator)().Navigator;
 const RNStack = (0, withLayoutContext_1.withLayoutContext)(NativeStackNavigator);
 function isStackAction(action) {
@@ -65,10 +66,7 @@ const stackRouterOverride = (original) => {
                      */
                     const nextState = original.getStateForAction(state, action, {
                         ...options,
-                        routeGetIdList: {
-                            ...options.routeGetIdList,
-                            [action.payload.name]: getIdFunction(),
-                        },
+                        routeGetIdList: { ...options.routeGetIdList, [action.payload.name]: getIdFunction() },
                     });
                     /**
                      * React Navigation doesn't support dynamic getId function on the action. Because of this,
@@ -158,24 +156,18 @@ function filterSingular(state, singular) {
         // Remove all other routes with the same name and id.
         return name !== route.name || id !== getId({ params: route.params });
     });
-    return {
-        ...state,
-        index: routes.length - 1,
-        routes,
-    };
+    return { ...state, index: routes.length - 1, routes };
 }
 const Stack = Object.assign((props) => {
     return <RNStack {...props} UNSTABLE_router={exports.stackRouterOverride}/>;
 }, {
     Screen: RNStack.Screen,
+    Protected: Protected_1.Protected,
 });
 exports.default = Stack;
 const StackRouter = (options) => {
     const router = (0, native_1.StackRouter)(options);
-    return {
-        ...router,
-        ...(0, exports.stackRouterOverride)(router),
-    };
+    return { ...router, ...(0, exports.stackRouterOverride)(router) };
 };
 exports.StackRouter = StackRouter;
 //# sourceMappingURL=StackClient.js.map

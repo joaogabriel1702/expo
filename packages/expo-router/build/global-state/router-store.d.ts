@@ -1,12 +1,12 @@
-import { NavigationContainerRefWithCurrent } from '@react-navigation/native';
+import { NavigationContainerRefWithCurrent, NavigationState } from '@react-navigation/native';
 import { ComponentType } from 'react';
 import { LinkToOptions } from './routing';
 import { UrlObject } from '../LocationProvider';
 import { RouteNode } from '../Route';
+import { ResultState } from '../exports';
 import { ExpoLinkingOptions, LinkingConfigOptions } from '../getLinkingConfig';
 import { RedirectConfig } from '../getRoutesCore';
 import { Href, RequireContext } from '../types';
-type ResultState = any;
 /**
  * This is the global state for the router. It is used to keep track of the current route, and to provide a way to navigate to other routes.
  *
@@ -18,8 +18,7 @@ export declare class RouterStore {
     linking?: ExpoLinkingOptions;
     private hasAttemptedToHideSplash;
     initialState?: ResultState;
-    rootState?: ResultState;
-    nextState?: ResultState;
+    rootState?: ResultState | NavigationState;
     routeInfo?: UrlObject;
     splashScreenAnimationFrame?: number;
     config: any;
@@ -43,14 +42,22 @@ export declare class RouterStore {
     reload: any;
     prefetch: any;
     initialize(context: RequireContext, navigationRef: NavigationContainerRefWithCurrent<ReactNavigation.RootParamList>, linkingConfigOptions?: LinkingConfigOptions): void;
-    updateState(state: ResultState, nextState?: any): void;
-    getRouteInfo(state: ResultState): UrlObject;
+    updateState(state: ResultState | NavigationState): void;
+    getRouteInfo(state: ResultState | NavigationState): UrlObject;
     shouldShowTutorial(): boolean;
     /** Make sure these are arrow functions so `this` is correctly bound */
     subscribeToRootState: (subscriber: () => void) => () => boolean;
     subscribeToStore: (subscriber: () => void) => () => boolean;
     snapshot: () => this;
-    rootStateSnapshot: () => any;
+    rootStateSnapshot: () => Readonly<{
+        key: string;
+        index: number;
+        routeNames: string[];
+        history?: unknown[];
+        routes: import("@react-navigation/native").NavigationRoute<import("@react-navigation/native").ParamListBase, string>[];
+        type: string;
+        stale: false;
+    }> | ResultState;
     routeInfoSnapshot: () => UrlObject;
     cleanup(): void;
     getStateFromPath(href: Href, options?: LinkToOptions): (Partial<Omit<Readonly<{
@@ -82,8 +89,15 @@ export declare class RouterStore {
 }
 export declare const store: RouterStore;
 export declare function useExpoRouter(): RouterStore;
-export declare function useStoreRootState(): any;
+export declare function useStoreRootState(): Readonly<{
+    key: string;
+    index: number;
+    routeNames: string[];
+    history?: unknown[];
+    routes: import("@react-navigation/native").NavigationRoute<import("@react-navigation/native").ParamListBase, string>[];
+    type: string;
+    stale: false;
+}> | ResultState;
 export declare function useStoreRouteInfo(): UrlObject;
 export declare function useInitializeExpoRouter(context: RequireContext, options: LinkingConfigOptions): RouterStore;
-export {};
 //# sourceMappingURL=router-store.d.ts.map

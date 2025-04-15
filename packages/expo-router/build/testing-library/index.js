@@ -41,6 +41,7 @@ function renderRouter(context = './app', { initialUrl = '/', linking, ...options
     // Force the render to be synchronous
     process.env.EXPO_ROUTER_IMPORT_MODE = 'sync';
     const result = (0, react_native_1.render)(<ExpoRoot_1.ExpoRoot context={mockContext} location={initialUrl} linking={linking}/>, options);
+    (0, react_native_1.act)(() => jest.runOnlyPendingTimers());
     /**
      * This is a hack to ensure that React Navigation's state updates are processed before we run assertions.
      * Some updates are async and we need to wait for them to complete, otherwise will we get a false positive.

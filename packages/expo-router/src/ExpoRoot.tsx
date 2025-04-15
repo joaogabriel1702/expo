@@ -148,7 +148,6 @@ function ContextNavigator({
       initialState={store.initialState}
       linking={store.linking as LinkingOptions<any>}
       onUnhandledAction={onUnhandledAction}
-      onReady={() => console.log('Router is ready')}
       documentTitle={{
         enabled: false,
       }}>
@@ -163,6 +162,7 @@ function ContextNavigator({
 
 function Content({ component }: { component: ComponentType<any> }) {
   const { state, descriptors, NavigationContent } = useNavigationBuilder(StackRouter, {
+    id: '__root',
     children: <Screen name={INTERNAL_SLOT_NAME} component={component} />,
   });
 

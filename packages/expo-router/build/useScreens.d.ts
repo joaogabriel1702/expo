@@ -1,4 +1,4 @@
-import type { EventMapBase, NavigationState, ParamListBase, RouteConfig, RouteProp, ScreenListeners } from '@react-navigation/native';
+import { NavigationAction, type EventMapBase, type NavigationState, type ParamListBase, type RouteConfig, type RouteProp, type ScreenListeners } from '@react-navigation/native';
 import React from 'react';
 import { RouteNode } from './Route';
 import { UnknownOutputParams } from './types';
@@ -25,10 +25,11 @@ export type ScreenProps<TOptions extends Record<string, any> = Record<string, an
     dangerouslySingular?: SingularOptions;
 };
 export type SingularOptions = boolean | ((name: string, params: UnknownOutputParams) => string | undefined);
+export type GetProtectedNavigationAction = (screen: string) => NavigationAction;
 /**
  * @returns React Navigation screens sorted by the `route` property.
  */
-export declare function useSortedScreens(order: ScreenProps[]): React.ReactNode[];
+export declare function useSortedScreens(order: ScreenProps[], protectedScreens: Set<string>): React.ReactNode[];
 /** Wrap the component with various enhancements and add access to child routes. */
 export declare function getQualifiedRouteComponent(value: RouteNode): React.ComponentType<any> | {
     ({ route, navigation, ...props }: any): React.JSX.Element;
