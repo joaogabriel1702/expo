@@ -10,6 +10,8 @@
 
 ### 💡 Others
 
+- [Android] enable edge-to-edge
+
 ## 5.1.5 — 2025-04-23
 
 ### 🐛 Bug fixes
