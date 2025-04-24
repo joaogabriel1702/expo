@@ -18,7 +18,14 @@
     app:behavior_hideable="true"
     app:behavior_peekHeight="0dp"
     app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
-
+<!--    A content layout that provides a background for the padding added by `DevMenuActivity` to avoid the navigation bar.
+        The color comes from  @expo/styleguide-native/lightTheme/bg/secondary -->
+    <FrameLayout
+      android:id="@+id/bottom_sheet_content"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:background="#F8F8FA"
+      />
   </FrameLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

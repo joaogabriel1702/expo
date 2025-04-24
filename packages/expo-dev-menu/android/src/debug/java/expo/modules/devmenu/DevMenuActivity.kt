@@ -9,7 +9,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.doOnLayout
+import androidx.core.view.updatePadding
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.ReactDelegate
@@ -126,12 +130,31 @@ class DevMenuActivity : ReactActivity() {
   }
 
   override fun setContentView(view: View?) {
+    // Enables edge-to-edge
+    WindowCompat.setDecorFitsSystemWindows(window, false)
+
     super.setContentView(R.layout.bottom_sheet)
 
     val mainLayout = findViewById<CoordinatorLayout>(R.id.main_layout)
     val bottomSheet = findViewById<FrameLayout>(R.id.bottom_sheet)
+    val bottomSheetContent = findViewById<FrameLayout>(R.id.bottom_sheet_content)
+
+    // Adds transparent top padding to avoid the status bar
+    ViewCompat.setOnApplyWindowInsetsListener(bottomSheet) { view, windowInsets ->
+      val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+      view.updatePadding(top = insets.top)
+      WindowInsetsCompat.CONSUMED
+    }
+
+    // Adds bottom padding with bg.secondary color to avoid the navigation bar
+    ViewCompat.setOnApplyWindowInsetsListener(bottomSheetContent) { lala, windowInsets ->
+      val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+      bottomSheetContent.updatePadding(bottom = insets.bottom)
+      WindowInsetsCompat.CONSUMED
+    }
+
     (view?.parent as? ViewGroup)?.removeView(view)
-    bottomSheet.addView(view)
+    bottomSheetContent.addView(view)
 
     BottomSheetBehavior.from(bottomSheet).apply {
       addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
